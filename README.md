@@ -4,6 +4,8 @@ This is a model showcasing Kuran's Cascade Theory (1991), developed by Aditya Gu
 
 Please enjoy the model under [this link](https://www.netlogoweb.org/launch#https://raw.githubusercontent.com/ca9/politics_simulations/master/prop.nlogo).
 
+![](giffy_image.gif)
+
 ## HOW IT WORKS
 
 We observe a map full of people or "peeps" (after hitting "Setup"), each with their own private and public preference for their current government. Upon hitting "Run" a simulation begins where the agents move, interact, and thus influence each other's public preferences on the bases of chosen parameters.
@@ -39,7 +41,7 @@ You observe people (called "peeps" in the code) spread out over a region - the m
 
 * The **rebel_threshold** determines the point of external preference which an agent starts to "rebel". External preference must exceed internal preference here, so agents with internal preference over the rebel_threshold will not rebel. You can move this in simulation-time.
 
-* **propagandists** introduces agents spreading propaganda and forcing an increase in "external preference" of people around. Rebels are oblivious to this effect, and only respond to public around them. Even so, they remain hardy. Their resistence to influence is a multiplicative factor of **"rebel_hardiness"**.
+* **propagandists** introduces agents spreading propaganda and forcing an increase in "external preference" of people around. Rebels are resistent to this effect and respond to public around them. Even so, they remain hardy. Their resistence to these influences is a multiplicative factor of **"rebel_hardiness"**.
 
 * **prop-power** determines the power of the propaganda and can be moved in realtime.
 

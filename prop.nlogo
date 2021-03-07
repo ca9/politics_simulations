@@ -94,13 +94,23 @@ to propaganda-spread
     fd 1
     rt random 10
     lt random 10
-    let around-me peeps in-radius propaganda-radius
-    set around-me peeps with [rebelling = false]
     let around-me-patches patches in-radius propaganda-radius
     ask around-me-patches [set pcolor yellow + 3]
+
+    let around-me peeps in-radius propaganda-radius
+    set around-me around-me with [rebelling = false]
     ask around-me [
       set external_pref min(list
         (external_pref * (1.0 + (random-normal (prop-power / 1000) 0.001)))
+        100
+      )
+    ]
+
+    set around-me peeps in-radius propaganda-radius
+    set around-me around-me with [rebelling = true]
+    ask around-me [
+      set external_pref min(list
+        (external_pref * (1.0 + (random-normal (prop-power / (1000 * rebel_hardiness)) 0.001)))
         100
       )
     ]
@@ -362,7 +372,7 @@ rebel_threshold
 rebel_threshold
 ifelse-value (any? peeps) [min([internal_pref] of peeps)] [0]
 ifelse-value (any? peeps) [max( [external_pref] of peeps )] [50]
-14.0
+19.0
 1
 1
 NIL
@@ -480,7 +490,7 @@ prop-power
 prop-power
 0
 100
-11.0
+16.0
 1
 1
 NIL
@@ -520,7 +530,7 @@ rebel_hardiness
 rebel_hardiness
 0
 10
-4.0
+2.0
 1
 1
 NIL
@@ -568,7 +578,7 @@ You observe people (called "peeps" in the code) spread out over a region - the m
 
 * The **rebel_threshold** determines the point of external preference which an agent starts to "rebel". External preference must exceed internal preference here, so agents with internal preference over the rebel_threshold will not rebel. You can move this in simulation-time.
 
-* **propagandists** introduces agents spreading propaganda and forcing an increase in "external preference" of people around. Rebels are oblivious to this effect, and only respond to public around them. Even so, they remain hardy. Their resistence to influence is a multiplicative factor of **"rebel_hardiness"**.
+* **propagandists** introduces agents spreading propaganda and forcing an increase in "external preference" of people around. Rebels are resistent to this effect and respond to public around them. Even so, they remain hardy. Their resistence to these influences is a multiplicative factor of **"rebel_hardiness"**.
 
 * **prop-power** determines the power of the propaganda and can be moved in realtime.
 
