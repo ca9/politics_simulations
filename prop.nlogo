@@ -61,17 +61,22 @@ end
 to drop-in-pref-social
   let casual_drop 0
   let rebel_drop 0
+  let divisor 200
+  if (rebelling = true) [
+    set divisor divisor * rebel_hardiness
+  ]
+
   if (any? buddies with [rebelling = false]) [
-    set casual_drop (external_pref - mean([external_pref] of buddies with [rebelling = false])) * transmission / 100
+    set casual_drop (external_pref - mean([external_pref] of buddies with [rebelling = false])) * transmission / divisor
   ]
   let near-rebels (other peeps with [rebelling = true]) in-radius propaganda-radius
   if (any? near-rebels) [
-    set rebel_drop (external_pref - mean([external_pref] of near-rebels)) * transmission / 100
+    set rebel_drop (external_pref - mean([external_pref] of near-rebels)) * transmission / divisor
   ]
   ;; show casual_drop
   ;; show rebel_drop
-  let social_pref min(list external_pref (external_pref - casual_drop))
-  set social_pref min(list external_pref (external_pref - rebel_drop))
+  ;; let social_pref min(list external_pref (external_pref - casual_drop))
+  let social_pref min(list external_pref (external_pref - rebel_drop - casual_drop))
   if (social_pref > internal_pref)[
     ;; show external_pref - social_pref
     ;; show (list ticks external_pref internal_pref social_pref (external_pref - social_pref))
@@ -90,6 +95,7 @@ to propaganda-spread
     rt random 10
     lt random 10
     let around-me peeps in-radius propaganda-radius
+    set around-me peeps with [rebelling = false]
     let around-me-patches patches in-radius propaganda-radius
     ask around-me-patches [set pcolor yellow + 3]
     ask around-me [
@@ -123,7 +129,10 @@ to rebel-check
     set rebelling false
   ]
   if internal_pref < rebel_threshold [
-    if ((external_pref - internal_pref) > 2 * internal_pref_sd and random 100 < freedom_fighter_chance) [
+    if (
+      ((external_pref - internal_pref) > 2 * internal_pref_sd) and
+      (random 100 < freedom_fighter_chance)
+      ) [
       set rebelling true
       set external_pref rebel_threshold
       show "freedom fighter created"
@@ -251,10 +260,10 @@ NIL
 1
 
 SLIDER
-13
-98
-185
-131
+15
+118
+187
+151
 population_density
 population_density
 0
@@ -289,7 +298,7 @@ internal_pref_sd
 internal_pref_sd
 0
 internal_pref_mean
-17.0
+18.0
 1
 1
 NIL
@@ -327,8 +336,8 @@ SLIDER
 external_pref_sd
 external_pref_sd
 0
-internal_pref_mean
-15.0
+2 * internal_pref_mean
+30.0
 1
 1
 NIL
@@ -353,7 +362,7 @@ rebel_threshold
 rebel_threshold
 ifelse-value (any? peeps) [min([internal_pref] of peeps)] [0]
 ifelse-value (any? peeps) [max( [external_pref] of peeps )] [50]
-28.0
+14.0
 1
 1
 NIL
@@ -378,8 +387,8 @@ SLIDER
 transmission
 transmission
 0
-100
-30.0
+50
+10.0
 1
 1
 NIL
@@ -400,7 +409,7 @@ PLOT
 38
 746
 754
-866
+947
 Rebellion Over Time
 NIL
 NIL
@@ -426,7 +435,7 @@ buddy-radius
 buddy-radius
 0
 5
-3.0
+1.0
 1
 1
 NIL
@@ -441,7 +450,7 @@ propaganda-radius
 propaganda-radius
 1
 20
-8.0
+9.0
 1
 1
 NIL
@@ -471,7 +480,7 @@ prop-power
 prop-power
 0
 100
-0.0
+11.0
 1
 1
 NIL
@@ -485,8 +494,33 @@ SLIDER
 freedom_fighter_chance
 freedom_fighter_chance
 0
+50
+10.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+82
+29
+232
+47
+Click me first!
+11
+0.0
+1
+
+SLIDER
+761
+214
+933
+247
+rebel_hardiness
+rebel_hardiness
+0
 10
-1.0
+4.0
 1
 1
 NIL
@@ -495,39 +529,118 @@ HORIZONTAL
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This is a model showcasing Kuran's Cascade Theory (1991), developed by Aditya Gupta (School of Public Policy, London School of Economics - 2021).
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+We observe a map full of people or "peeps" (after hitting "Setup"), each with their own private and public preference for their current government. Upon hitting "Run" a simulation begins where the agents move, interact, and thus influence each other's public preferences on the bases of chosen parameters.
+
+The logic is this: If the "external preference" of peeps falls below the rebellion threshold, they are actively "rebelling" - and marked as "X" check marks. 
+
+The charts show distributions of these attributes and key statistics of the population.
+
+There are two color schemes: 
+1. "difference" showcases the quantified difference of their preferences with increasingly darker shades of blue. 
+
+2. The "likely_rebel" scheme shows the difference between their rebellion threshold, and their actual external preference. 
+
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+* Please start by pressing "Setup" to set (or reset) the map. 
+You observe people (called "peeps" in the code) spread out over a region - the map.
+
+* The "Run" button begins and pauses the simulation.
+
+* The first 3 sliders help choose a population density, an approximate a normal distribution by choosing a mean and standard distribution for an internal preferences.
+**Internal Preferences** are constant over each run**.
+
+
+* The **external preference for every agent is higher than their own internal preference** in this simulation. The distance from internal preference is also normally distributed, with standard deviation **external_pref_sd**. Increase this slider to create a wider gap between internal and external preferences at setup time.
+
+* The distance at which peeps remain influenced by external opinions of their neighbours is controlled by **"buddy-radius"**. The external preferences of "buddies" can have a bidirectional effect on peeps.
+
+* **transmission** determines the level to which peeps and rebels are influenced by their neighbours (buddies) and rebels around them.
+
+* The **propaganda-radius** on the right shows the radius of influence of **rebels as well as propagandists**. They typically are "noisier" elements in the and send their message "farther" than "buddies", or people near a peep. 
+
+* The **rebel_threshold** determines the point of external preference which an agent starts to "rebel". External preference must exceed internal preference here, so agents with internal preference over the rebel_threshold will not rebel. You can move this in simulation-time.
+
+* **propagandists** introduces agents spreading propaganda and forcing an increase in "external preference" of people around. Rebels are oblivious to this effect, and only respond to public around them. Even so, they remain hardy. Their resistence to influence is a multiplicative factor of **"rebel_hardiness"**.
+
+* **prop-power** determines the power of the propaganda and can be moved in realtime.
+
+* Finally, we have the *freedom-fighter-chance*. If an agent's external_preference is forced to exceed her internal preference by twice its standard deviation (a level that their internal preference had only <5% chance of reaching), and their internal preference is below the rebellion threshold, then they experience a **freedom-fighter-chance** % probability of immediately rebelling (and external preference reaching rebellion threshold). 
+
 
 ## THINGS TO NOTICE
 
-(suggested things for the user to notice while running the model)
+* The first observation should be that under most conditions, without propaganda (or penalty), the external preference approaches the internal preference over time. The rate of transmission directly influences this.
 
-## THINGS TO TRY
+* Introduction of propagandists (or proxy for government/policing agents) directly starts increasing external preference. A key finding is that with enough propagandists and power (and low freedom-fighter chance), the external preference may **irrepairably** reach very high values, such that it may never be restored. This is a shout to **Pluralistic Ignorance**, or _“The lie” (Alexander Solzhenitsyn, 1970).
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+* The starting conditions and the history of the simulation matter a lot in terms of determining the outcomes and responses. Mean and standard deviation of preferences do not completely represent underlying distributions which could be deeply fractured. The same "rebellion percentage" could be representative of vastly different scenarios.
 
-## EXTENDING THE MODEL
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+## EXTENDING THE MODEL / KNOWN CAVEATS
+
+The model obviously makes a lot of oversimplifying assumptions, not the least of which is the idea that there is a consistent rebellion threshold across the population (this in fact is in direct conflict with Kuran's theories).
+
+Furthermore, the values and their effects are synthetic at best.
+
+Viewers are welcome to copy, modify, and extend and refine the code to suit their needs. The code is open-sourced as per MIT license attached below.
 
 ## NETLOGO FEATURES
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+A key caveat of netlogo is that the world-state is evaluated synchronously per tick. This means that the agents/peeps are updated in some given sequence, rather than "asynchronously" or concurrently, in a true "continuous" sense as would happen in reality. Nevertheless, this does not deter from the insights available from this.
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Please enjoy the model under [this link](https://www.netlogoweb.org/launch#https://raw.githubusercontent.com/ca9/politics_simulations/master/prop.nlogo).
+
+This work has been inspired by:
+
+### Now Out of Never: The Element of Surprise in the East European Revolution of 1989
+
+#### Metadata
+
+* Item Type: [[Article]]
+* Authors: [[Timur Kuran]]
+* Date: [[1991]]
+* Date Added: [[2021-02-07]]
+* URL: [https://www.jstor.org/stable/2010422](https://www.jstor.org/stable/2010422)
+* DOI: [10.2307/2010422](https://doi.org/10.2307/2010422)
+* Cite key: undefined
+* Topics: [[Kuran]]
+, #zotero, #literature-notes, #reference
+* PDF Attachments
+	- [Submitted Version](zotero://open-pdf/library/items/TTQ7V5FJ)
+
+#### Abstract
+
+Like many major revolutions in history, the East European Revolution of 1989 caught its leaders, participants, victims, and observers by surprise. This paper offers and explanation whose crucial feature is a distinction between private and public preferences. By suppressing their antipathies to the political status quo, the East Europeans misled everyone, including themselves, as to the possibility of a successful uprising. In effect, they conferred on their privately despised governments an aura of invincibility. Under the circumstances, public opposition was poised to grow explosively if ever enough people lost their fear of exposing their private preferences. The currently popular theories of revolution do not make clear why uprisings easily explained in retrospect may not have been anticipated. The theory developed here fills this void. Among its predictions is that political revolutions will inevitably continue to catch the world by surprise.
+
+## MIT License
+
+Copyright (c) [2021] [Aditya Gupta, agupta42@lse.ac.uk]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 @#$#@#$#@
 default
 true
